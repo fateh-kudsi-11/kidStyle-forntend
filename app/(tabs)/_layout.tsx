@@ -1,53 +1,100 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Link, Tabs } from 'expo-router';
-import { Pressable, useColorScheme } from 'react-native';
-
-import Colors from '../../constants/Colors';
-
-/**
- * You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
- */
-function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
-  color: string;
-}) {
-  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
-}
+import { Tabs } from "expo-router";
+import TabBarIcon from "../../components/TabBarIcon";
+import { useSelector, useDispatch } from "react-redux";
+import { FilteringState } from "@/redux/slices/filteringSlice";
+import { useEffect, useCallback } from "react";
+import { useLazyGetUserProfileQuery } from "@/redux/apis/userApi";
+import { retrieveTokenFromStorage } from "@/utils/storageHelpers";
+import { setCredentials } from "@/redux/slices/authSlice";
+import { getBackgroundColor } from "@/utils/componentsHelpers";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const filtering = useSelector(
+    (state: { filtering: FilteringState }) => state.filtering
+  );
+  const { gender } = filtering;
+
+  const dispatch = useDispatch();
+
+  const [getUserProfile, { isLoading }] = useLazyGetUserProfileQuery();
+
+  const getUserToken = useCallback(async () => {
+    const token = await retrieveTokenFromStorage();
+    if (token) {
+      const { data } = await getUserProfile();
+      dispatch(setCredentials(data));
+    }
+  }, [retrieveTokenFromStorage, getUserProfile]);
+
+  useEffect(() => {
+    getUserToken();
+  }, [getUserToken]);
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-      }}>
+        tabBarActiveTintColor: getBackgroundColor(gender),
+        tabBarStyle: { backgroundColor: "#fff", borderTopColor: "#fff" },
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable>
-                {({ pressed }) => (
-                  <FontAwesome
-                    name="info-circle"
-                    size={25}
-                    color={Colors[colorScheme ?? 'light'].text}
-                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
+          tabBarIcon: ({ color }) => (
+            <TabBarIcon name="ios-home" color={color} kind="Ionicons" />
           ),
+
+          headerShown: false,
+          title: "home",
         }}
       />
       <Tabs.Screen
-        name="two"
+        name="search"
         options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          title: "search",
+          tabBarIcon: ({ color }) => (
+            <TabBarIcon
+              name="store-search-outline"
+              color={color}
+              kind="MaterialCommunityIcons"
+            />
+          ),
+          headerShown: false,
+        }}
+      />
+
+      <Tabs.Screen
+        name="bag"
+        options={{
+          title: "Bag",
+          tabBarIcon: ({ color }) => (
+            <TabBarIcon name="bag" color={color} kind="SimpleLineIcons" />
+          ),
+          headerShadowVisible: false,
+        }}
+      />
+      <Tabs.Screen
+        name="wishList"
+        options={{
+          title: "Wish List",
+          tabBarIcon: ({ color }) => (
+            <TabBarIcon name="ios-heart" color={color} kind="Ionicons" />
+          ),
+          headerShadowVisible: false,
+        }}
+      />
+      <Tabs.Screen
+        name="account"
+        options={{
+          title: "My Account",
+          tabBarIcon: ({ color }) => (
+            <TabBarIcon
+              name="account"
+              color={color}
+              kind="MaterialCommunityIcons"
+            />
+          ),
+          headerShown: false,
         }}
       />
     </Tabs>
